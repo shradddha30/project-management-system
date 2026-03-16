@@ -10,27 +10,12 @@ const dbConfig = {
   ssl: { rejectUnauthorized: false }
 };
 
-async function executeQuery(query, params = []) {
-  const connection = await mysql.createConnection(dbConfig);
-  try {
-    const [results] = await connection.execute(query, params);
-    return results;
-  } finally {
-    await connection.end();
-  }
-}
-
 export async function GET() {
   try {
-    // Pehle table check karlo
-    await executeQuery(`CREATE TABLE IF NOT EXISTS projects (
-      id INT AUTO_INCREMENT PRIMARY KEY,
-      name VARCHAR(255) NOT NULL,
-      description TEXT,
-      status VARCHAR(50) DEFAULT 'In Progress'
-    )`);
-    const data = await executeQuery("SELECT * FROM projects ORDER BY id DESC");
-    return NextResponse.json(data);
+    const connection = await mysql.createConnection(dbConfig);
+    const [rows] = await connection.execute("SELECT * FROM projects ORDER BY id DESC");
+    await connection.end();
+    return NextResponse.json(rows);
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
@@ -39,11 +24,13 @@ export async function GET() {
 export async function POST(req) {
   try {
     const { name, description } = await req.json();
-    const res = await executeQuery(
-      "INSERT INTO projects (name, description) VALUES (?, ?)",
+    const connection = await mysql.createConnection(dbConfig);
+    const [result] = await connection.execute(
+      "INSERT INTO projects (name, description, status) VALUES (?, ?, 'In Progress')",
       [name, description]
     );
-    return NextResponse.json({ id: res.insertId, name, description, status: 'In Progress' });
+    await connection.end();
+    return NextResponse.json({ id: result.insertId, name, description, status: 'In Progress' });
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }

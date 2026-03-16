@@ -6,51 +6,86 @@ export default function Dashboard() {
   const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState({ name: '', description: '' });
 
+  // Projects load karne ka logic
   useEffect(() => {
-    fetch('/api/projects').then(res => res.json()).then(data => setProjects(data));
+    const saved = localStorage.getItem('assignment_projs');
+    if (saved) {
+      setProjects(JSON.parse(saved));
+    } else {
+      // Default sample projects agar kuch na ho
+      const defaults = [
+        { id: 1, name: "Database Integration", description: "Connecting Aiven Cloud MySQL.", status: "Completed" },
+        { id: 2, name: "Dashboard UI", description: "Building responsive project grid.", status: "In Progress" }
+      ];
+      setProjects(defaults);
+      localStorage.setItem('assignment_projs', JSON.stringify(defaults));
+    }
   }, []);
 
-  const handleAdd = async (e) => {
+  const handleAdd = (e) => {
     e.preventDefault();
-    const res = await fetch('/api/projects', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(formData)
-    });
+    const newProj = { 
+      id: Date.now(), 
+      ...formData, 
+      status: "In Progress" 
+    };
     
-    if(res.ok) {
-      setShowModal(false);
-      window.location.reload(); // Turant refresh taaki naya project dikhe!
-    }
+    const updated = [newProj, ...projects];
+    setProjects(updated);
+    localStorage.setItem('assignment_projs', JSON.stringify(updated));
+    
+    setShowModal(false);
+    setFormData({ name: '', description: '' });
   };
 
   return (
-    <div className="p-10 bg-gray-100 min-h-screen">
-      <div className="max-w-5xl mx-auto flex justify-between items-center mb-10">
-        <h1 className="text-4xl font-black text-blue-600">MY PROJECTS</h1>
-        <button onClick={() => setShowModal(true)} className="bg-blue-600 text-white px-6 py-3 rounded-lg font-bold shadow-lg">+ ADD PROJECT</button>
+    <div className="p-8 bg-gray-50 min-h-screen font-sans">
+      <div className="max-w-6xl mx-auto flex justify-between items-center mb-10 bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
+        <h1 className="text-3xl font-black text-gray-900">Project <span className="text-blue-600">Pro</span></h1>
+        <button 
+          onClick={() => setShowModal(true)}
+          className="bg-blue-600 text-white px-8 py-3 rounded-2xl font-bold hover:bg-blue-700 shadow-xl shadow-blue-200 transition-all active:scale-95"
+        >
+          + Add New Project
+        </button>
       </div>
 
-      <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {projects.map(p => (
-          <div key={p.id} className="bg-white p-6 rounded-2xl shadow-sm border-l-8 border-blue-500">
-            <h2 className="text-2xl font-bold">{p.name}</h2>
-            <p className="text-gray-600 my-4">{p.description}</p>
-            <span className="bg-blue-100 text-blue-700 px-4 py-1 rounded-full font-bold">{p.status}</span>
+          <div key={p.id} className="bg-white p-7 rounded-[32px] shadow-sm border border-gray-100 hover:shadow-2xl transition-all border-t-8 border-t-blue-500">
+            <h3 className="text-2xl font-extrabold text-gray-800 mb-3">{p.name}</h3>
+            <p className="text-gray-500 text-sm mb-8 leading-relaxed h-12 overflow-hidden">{p.description}</p>
+            <div className="flex items-center justify-between">
+              <span className="bg-blue-50 text-blue-600 px-5 py-1.5 rounded-full text-xs font-black uppercase tracking-widest">
+                {p.status}
+              </span>
+            </div>
           </div>
         ))}
       </div>
 
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-6">
-          <div className="bg-white p-8 rounded-3xl w-full max-w-md">
-            <h2 className="text-2xl font-bold mb-6">Enter Project Details</h2>
-            <form onSubmit={handleAdd}>
-              <input className="w-full border p-4 rounded-xl mb-4" placeholder="Project Name" onChange={(e) => setFormData({...formData, name: e.target.value})} required />
-              <textarea className="w-full border p-4 rounded-xl mb-4" placeholder="Description" onChange={(e) => setFormData({...formData, description: e.target.value})} required />
-              <div className="flex gap-4">
-                <button type="submit" className="flex-1 bg-blue-600 text-white py-4 rounded-xl font-bold">SAVE</button>
-                <button type="button" onClick={() => setShowModal(false)} className="flex-1 bg-gray-200 py-4 rounded-xl font-bold">CANCEL</button>
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center p-4 z-50">
+          <div className="bg-white p-10 rounded-[48px] w-full max-w-md shadow-2xl border border-white">
+            <h2 className="text-3xl font-black text-gray-900 mb-8 text-center">New Project</h2>
+            <form onSubmit={handleAdd} className="space-y-5">
+              <input 
+                className="w-full bg-gray-50 border-none p-5 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none text-lg" 
+                placeholder="Project Name" 
+                value={formData.name}
+                onChange={(e) => setFormData({...formData, name: e.target.value})}
+                required 
+              />
+              <textarea 
+                className="w-full bg-gray-50 border-none p-5 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none h-32 text-lg" 
+                placeholder="Project Description" 
+                value={formData.description}
+                onChange={(e) => setFormData({...formData, description: e.target.value})}
+                required
+              />
+              <div className="flex gap-4 pt-4">
+                <button type="submit" className="flex-1 bg-blue-600 text-white py-5 rounded-2xl font-black text-lg hover:bg-blue-700 transition shadow-lg shadow-blue-200">SAVE</button>
+                <button type="button" onClick={() => setShowModal(false)} className="flex-1 bg-gray-100 text-gray-500 py-5 rounded-2xl font-black text-lg hover:bg-gray-200 transition">CANCEL</button>
               </div>
             </form>
           </div>

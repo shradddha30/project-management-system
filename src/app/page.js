@@ -1,55 +1,49 @@
 "use client";
 import { useState, useEffect } from 'react';
 
-export default function ProjectApp() {
+export default function PerfectDashboard() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [projects, setProjects] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState({ name: '', description: '' });
   const [loginData, setLoginData] = useState({ username: '', password: '' });
 
-  // Load Data
-  useEffect(() => {
-    const saved = localStorage.getItem('my_final_projs');
-    if (saved) setProjects(JSON.parse(saved));
-    else setProjects([{ id: 1, name: "Sample Project", description: "Default task", status: "In Progress" }]);
-  }, []);
+  const fetchDB = async () => {
+    const res = await fetch('/api/projects');
+    const data = await res.json();
+    if (Array.isArray(data)) setProjects(data);
+  };
 
-  // Login Handle
+  useEffect(() => { if (isLoggedIn) fetchDB(); }, [isLoggedIn]);
+
   const handleLogin = (e) => {
     e.preventDefault();
-    if (loginData.username === 'admin' && loginData.password === 'admin123') {
-      setIsLoggedIn(true);
-    } else { alert("Wrong! Use admin / admin123"); }
+    if (loginData.username === 'admin' && loginData.password === 'admin123') setIsLoggedIn(true);
+    else alert("Invalid Login");
   };
 
-  // Add Project
-  const handleAdd = (e) => {
+  const handleAdd = async (e) => {
     e.preventDefault();
-    const newP = { id: Date.now(), ...formData, status: "In Progress" };
-    const updated = [newP, ...projects];
-    setProjects(updated);
-    localStorage.setItem('my_final_projs', JSON.stringify(updated));
-    setShowModal(false);
-    setFormData({ name: '', description: '' });
-  };
-
-  // Delete Project
-  const handleDelete = (id) => {
-    const filtered = projects.filter(p => p.id !== id);
-    setProjects(filtered);
-    localStorage.setItem('my_final_projs', JSON.stringify(filtered));
+    const res = await fetch('/api/projects', {
+      method: 'POST',
+      body: JSON.stringify(formData)
+    });
+    if (res.ok) {
+      setShowModal(false);
+      setFormData({ name: '', description: '' });
+      fetchDB();
+    }
   };
 
   if (!isLoggedIn) {
     return (
-      <div style={{minHeight:'100-vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#f3f4f6', padding:'20px'}}>
-        <div style={{background:'white', padding:'40px', borderRadius:'20px', boxShadow:'0 10px 25px rgba(0,0,0,0.1)', width:'100%', maxWidth:'400px'}}>
-          <h2 style={{textAlign:'center', fontWeight:'800', fontSize:'24px', marginBottom:'20px'}}>Admin Login</h2>
-          <form onSubmit={handleLogin}>
-            <input type="text" placeholder="Username" style={{width:'100%', padding:'12px', marginBottom:'15px', borderRadius:'8px', border:'1px solid #ddd'}} onChange={(e)=>setLoginData({...loginData, username:e.target.value})} required />
-            <input type="password" placeholder="Password" style={{width:'100%', padding:'12px', marginBottom:'20px', borderRadius:'8px', border:'1px solid #ddd'}} onChange={(e)=>setLoginData({...loginData, password:e.target.value})} required />
-            <button type="submit" style={{width:'100%', padding:'12px', background:'#2563eb', color:'white', border:'none', borderRadius:'8px', fontWeight:'bold', cursor:'pointer'}}>Sign In</button>
+      <div style={{height:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#f3f4f6', fontFamily:'sans-serif'}}>
+        <div style={{background:'white', padding:'40px', borderRadius:'20px', boxShadow:'0 10px 30px rgba(0,0,0,0.05)', width:'350px', textAlign:'center'}}>
+          <h2 style={{fontSize:'24px', fontWeight:'bold', marginBottom:'25px'}}>Admin Login</h2>
+          <form onSubmit={handleLogin} style={{display:'flex', flexDirection:'column', gap:'15px'}}>
+            <input type="text" placeholder="Username" style={{padding:'12px', borderRadius:'10px', border:'1px solid #ddd'}} onChange={(e)=>setLoginData({...loginData, username:e.target.value})} />
+            <input type="password" placeholder="Password" style={{padding:'12px', borderRadius:'10px', border:'1px solid #ddd'}} onChange={(e)=>setLoginData({...loginData, password:e.target.value})} />
+            <button style={{padding:'12px', background:'#3b82f6', color:'white', borderRadius:'10px', border:'none', fontWeight:'bold', cursor:'pointer'}}>Sign In</button>
           </form>
         </div>
       </div>
@@ -57,39 +51,43 @@ export default function ProjectApp() {
   }
 
   return (
-    <div style={{padding:'40px', background:'#f9fafb', minHeight:'100vh'}}>
-      <div style={{maxWidth:'1000px', margin:'0 auto', display:'flex', justifyContent:'space-between', alignItems:'center', background:'white', padding:'20px', borderRadius:'15px', boxShadow:'0 2px 10px rgba(0,0,0,0.05)'}}>
-        <h1 style={{fontSize:'24px', fontWeight:'bold'}}>Project <span style={{color:'#2563eb'}}>Dashboard</span></h1>
-        <div>
-          <button onClick={()=>setShowModal(true)} style={{background:'#2563eb', color:'white', padding:'10px 20px', borderRadius:'8px', border:'none', fontWeight:'bold', marginRight:'10px', cursor:'pointer'}}>+ Add Project</button>
-          <button onClick={()=>setIsLoggedIn(false)} style={{color:'#ef4444', border:'none', background:'none', cursor:'pointer', fontWeight:'bold'}}>Logout</button>
+    <div style={{minHeight:'100vh', background:'#f9fafb', padding:'40px', fontFamily:'sans-serif'}}>
+      <div style={{maxWidth:'1000px', margin:'0 auto'}}>
+        <header style={{display:'flex', justifyContent:'space-between', alignItems:'center', background:'white', padding:'20px 40px', borderRadius:'20px', boxShadow:'0 2px 10px rgba(0,0,0,0.03)'}}>
+          <h1 style={{fontSize:'28px', fontWeight:'bold'}}>Project <span style={{color:'#3b82f6'}}>Dashboard</span></h1>
+          <div style={{display:'flex', gap:'15px'}}>
+            <button onClick={()=>setShowModal(true)} style={{background:'#3b82f6', color:'white', padding:'10px 25px', borderRadius:'12px', border:'none', fontWeight:'bold', cursor:'pointer'}}>+ Add New Project</button>
+            <button onClick={()=>setIsLoggedIn(false)} style={{color:'#ef4444', border:'none', background:'none', fontWeight:'bold', cursor:'pointer'}}>Logout</button>
+          </div>
+        </header>
+
+        <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(300px, 1fr))', gap:'30px', marginTop:'40px'}}>
+          {projects.map(p => (
+            <div key={p.id} style={{background:'white', padding:'30px', borderRadius:'25px', borderTop:'8px solid #3b82f6', boxShadow:'0 4px 15px rgba(0,0,0,0.05)'}}>
+              <div style={{display:'flex', justifyContent:'space-between', marginBottom:'15px'}}>
+                <span style={{color:'#9ca3af', fontSize:'12px'}}>ID: #{p.id}</span>
+                <span style={{background:'#dbeafe', color:'#1e40af', padding:'4px 12px', borderRadius:'20px', fontSize:'11px', fontWeight:'bold'}}>{p.status}</span>
+              </div>
+              <h3 style={{fontSize:'22px', fontWeight:'bold', margin:'0 0 10px 0', color:'#111827'}}>{p.name}</h3>
+              <p style={{color:'#6b7280', fontSize:'14px', lineHeight:'1.5', marginBottom:'25px'}}>{p.description}</p>
+              <div style={{display:'flex', gap:'10px', borderTop:'1px solid #f3f4f6', paddingTop:'20px'}}>
+                <button style={{flex:1, padding:'10px', borderRadius:'10px', border:'none', background:'#10b981', color:'white', fontWeight:'bold', cursor:'pointer'}}>✓ Done</button>
+                <button style={{flex:1, padding:'10px', borderRadius:'10px', border:'1px solid #fee2e2', color:'#ef4444', background:'white', fontWeight:'bold', cursor:'pointer'}}>🗑 Delete</button>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
-      <div style={{maxWidth:'1000px', margin:'30px auto', display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(300px, 1fr))', gap:'20px'}}>
-        {projects.map(p => (
-          <div key={p.id} style={{background:'white', padding:'20px', borderRadius:'15px', borderLeft:'6px solid #2563eb', boxShadow:'0 4px 6px rgba(0,0,0,0.05)'}}>
-            <h3 style={{margin:'0 0 10px 0', fontSize:'20px'}}>{p.name}</h3>
-            <p style={{color:'#666', fontSize:'14px', marginBottom:'20px'}}>{p.description}</p>
-            <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
-              <span style={{background:'#dbeafe', color:'#1e40af', padding:'4px 12px', borderRadius:'20px', fontSize:'12px', fontWeight:'bold'}}>{p.status}</span>
-              <button onClick={()=>handleDelete(p.id)} style={{color:'#ef4444', background:'none', border:'none', cursor:'pointer', fontSize:'12px'}}>Delete</button>
-            </div>
-          </div>
-        ))}
-      </div>
-
       {showModal && (
-        <div style={{position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', display:'flex', alignItems:'center', justifyContent:'center', padding:'20px'}}>
-          <div style={{background:'white', padding:'30px', borderRadius:'20px', width:'100%', maxWidth:'400px'}}>
-            <h2 style={{marginTop:0}}>New Project</h2>
-            <form onSubmit={handleAdd}>
-              <input placeholder="Project Name" style={{width:'100%', padding:'12px', marginBottom:'10px', borderRadius:'8px', border:'1px solid #ddd'}} onChange={(e)=>setFormData({...formData, name:e.target.value})} required />
-              <textarea placeholder="Description" style={{width:'100%', padding:'12px', marginBottom:'15px', borderRadius:'8px', border:'1px solid #ddd', height:'100px'}} onChange={(e)=>setFormData({...formData, description:e.target.value})} required />
-              <div style={{display:'flex', gap:'10px'}}>
-                <button type="submit" style={{flex:1, padding:'12px', background:'#2563eb', color:'white', borderRadius:'8px', border:'none', fontWeight:'bold'}}>Save</button>
-                <button type="button" onClick={()=>setShowModal(false)} style={{flex:1, padding:'12px', background:'#eee', borderRadius:'8px', border:'none'}}>Cancel</button>
-              </div>
+        <div style={{position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:100}}>
+          <div style={{background:'white', padding:'40px', borderRadius:'25px', width:'400px'}}>
+            <h2 style={{marginTop:0}}>Add Project</h2>
+            <form onSubmit={handleAdd} style={{display:'flex', flexDirection:'column', gap:'15px'}}>
+              <input placeholder="Name" style={{padding:'12px', borderRadius:'10px', border:'1px solid #ddd'}} onChange={(e)=>setFormData({...formData, name:e.target.value})} required />
+              <textarea placeholder="Description" style={{padding:'12px', borderRadius:'10px', border:'1px solid #ddd', height:'100px'}} onChange={(e)=>setFormData({...formData, description:e.target.value})} required />
+              <button style={{padding:'12px', background:'#3b82f6', color:'white', borderRadius:'10px', border:'none', fontWeight:'bold'}}>Save to Database</button>
+              <button type="button" onClick={()=>setShowModal(false)} style={{background:'none', border:'none', color:'#9ca3af'}}>Cancel</button>
             </form>
           </div>
         </div>

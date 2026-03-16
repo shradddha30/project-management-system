@@ -1,48 +1,27 @@
 import { NextResponse } from "next/server";
-import mysql from "mysql2/promise";
 
-const dbConfig = {
-    host: 'mysql-1c88827c-project-mgmt-shraddha.j.aivencloud.com',
-    user: 'avnadmin',
-    password: 'AVNS_jFaJd1A1l0uHy6DzAkG',
-    database: 'defaultdb',
-    port: 11576,
-    ssl: { rejectUnauthorized: false }
-};
-
-async function initDB() {
-    const connection = await mysql.createConnection(dbConfig);
-    await connection.execute(`
-        CREATE TABLE IF NOT EXISTS projects (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            name VARCHAR(255) NOT NULL,
-            description TEXT,
-            status ENUM('In Progress', 'Completed') DEFAULT 'In Progress'
-        )
-    `);
-    await connection.end();
-}
+// Demo data jo pehle se dikhega
+let projects = [
+  { id: 1, name: "Database Setup", description: "Aiven Cloud connection done.", status: "Completed" },
+  { id: 2, name: "UI Enhancement", description: "Making the dashboard responsive.", status: "In Progress" }
+];
 
 export async function GET() {
-    try {
-        await initDB();
-        const connection = await mysql.createConnection(dbConfig);
-        const [rows] = await connection.execute('SELECT * FROM projects ORDER BY id DESC');
-        await connection.end();
-        return NextResponse.json(rows);
-    } catch (e) { return NextResponse.json({ error: e.message }, { status: 500 }); }
+  return NextResponse.json(projects);
 }
 
 export async function POST(req) {
-    try {
-        const { name, description } = await req.json();
-        await initDB();
-        const connection = await mysql.createConnection(dbConfig);
-        const [res] = await connection.execute(
-            'INSERT INTO projects (name, description) VALUES (?, ?)', 
-            [name, description]
-        );
-        await connection.end();
-        return NextResponse.json({ id: res.insertId, name, description, status: 'In Progress' });
-    } catch (e) { return NextResponse.json({ error: e.message }, { status: 500 }); }
+  try {
+    const { name, description } = await req.json();
+    const newProject = { 
+      id: Date.now(), // Unique ID for every new project
+      name, 
+      description, 
+      status: "In Progress" 
+    };
+    projects = [newProject, ...projects]; // Naya project sabse upar add hoga
+    return NextResponse.json(newProject);
+  } catch (error) {
+    return NextResponse.json({ error: "Failed to add" }, { status: 500 });
+  }
 }
